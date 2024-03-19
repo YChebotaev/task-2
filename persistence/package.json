@@ -1,0 +1,18 @@
+{
+  "name": "@task-2/persistence",
+  "version": "0.1.0",
+  "description": "",
+  "main": "index.ts",
+  "scripts": {
+    "migrate": "knex migrate:latest --knexfile ./knexfile.ts",
+    "rollback": "knex migrate:rollback --all --knexfile ./knexfile.ts",
+    "make:seed": "knex seed:make --knexfile ./knexfile.ts $1",
+    "seed": "knex seed:run --knexfile ./knexfile.ts"
+  },
+  "author": "YChebotaev <yury.79120345101@gmail.com>",
+  "license": "UNLICENSED",
+  "dependencies": {
+    "knex": "^3.1.0",
+    "sqlite3": "^5.1.7"
+  }
+}
