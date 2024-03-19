@@ -149,10 +149,14 @@
       ansible.builtin.template:
         src: templates/app.env.j2
         dest: "{{project_dir}}/app/.env"
-    - name: Copy servie .env
+    - name: Copy service .env
       ansible.builtin.template:
         src: templates/service.env.j2
         dest: "{{project_dir}}/service/.env"
+    - name: Copy persistence .env
+      ansible.builtin.template:
+        src: templates/persistence.env.j2
+        dest: "{{project_dir}}/persistence/.env"
     - name: Build app
       ansible.builtin.shell:
         cmd: npm run build
