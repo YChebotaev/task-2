@@ -210,9 +210,13 @@ export const createService = async ({ logger }: { logger: Logger }) => {
       }
     }
   }, async ({ headers }) => {
-    const { userId } = await validateSession(headers, true)
+    try {
+      const { userId } = await validateSession(headers, true)
 
-    return handlers.chats.getChatsOfUser(userId!)
+      return handlers.chats.getChatsOfUser(userId!)
+    } catch (e) {
+      return []
+    }
   })
 
   server.get<{

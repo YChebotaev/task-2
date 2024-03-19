@@ -1,0 +1,39 @@
+---
+- name: pincodes
+  hosts: pincodes
+  remote_user: root
+  tasks:
+    # Code
+    - name: Pull the code
+      ansible.builtin.git:
+        repo: "{{project_git_url}}"
+        dest: "{{project_dir}}"
+    - name: Install code dependencies
+      community.general.npm:
+        path: "{{project_dir}}"
+    - name: Copy app .env
+      ansible.builtin.template:
+        src: templates/app.env.j2
+        dest: "{{project_dir}}/app/.env"
+    - name: Copy servie .env
+      ansible.builtin.template:
+        src: templates/service.env.j2
+        dest: "{{project_dir}}/service/.env"
+    - name: Build app
+      ansible.builtin.shell:
+        cmd: npm run build
+        chdir: "{{project_dir}}/app"
+    # Database migrations
+    - name: Migrate persistence
+      ansible.builtin.shell:
+        cmd: npm run migrate
+        chdir: "{{project_dir}}/persistence"
+    # - name: Seed persistence
+    #   ansible.builtin.shell:
+    #     cmd: npm run seed
+    #     chdir: "{{project_dir}}/persistence"
+    # Start everything
+    - name: Restart service
+      ansible.builtin.shell:
+        cmd: pm2 restart service
+    
