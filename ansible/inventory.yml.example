@@ -1,0 +1,20 @@
+pincodes:
+  hosts:
+    0.0.0.0:
+      project:
+      project_git_url:
+      project_dir:
+      primary_origin:
+      service_origin:
+      service_jwt_secret:
+      service_password_pepper:
+      service_port:
+      db_name:
+      db_user:
+      db_user_password:
+      pgadmin_port:
+      pgadmin_default_email:
+      pgadmin_default_password:
+      openobserve_port:
+      openobserve_default_username:
+      openobserve_default_password:

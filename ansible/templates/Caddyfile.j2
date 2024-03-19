@@ -1,0 +1,33 @@
+{{primary_origin}} {
+	log {
+		output file /var/log/caddy/{{primary_origin}}-access.log
+	}
+
+	root * /var/{{project}}/app/dist
+  try_files {path} /index.html
+  file_server
+}
+
+{{service_origin}} {
+  log {
+		output file /var/log/caddy/webapp.{{service_origin}}-access.log
+	}
+
+  reverse_proxy http://localhost:{{service_port}}
+}
+
+pgadmin.{{primary_origin}} {
+  log {
+		output file /var/log/caddy/pgadmin.{{primary_origin}}-access.log
+	}
+
+  reverse_proxy http://localhost:{{pgadmin_port}}
+}
+
+openobserve.{{primary_origin}} {
+	log {
+		output file /var/log/caddy/openobserve.{{primary_origin}}-access.log
+	}
+
+  reverse_proxy http://localhost:{{openobserve_port}}
+}

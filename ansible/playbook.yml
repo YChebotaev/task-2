@@ -1,0 +1,222 @@
+---
+- name: pincodes
+  hosts: pincodes
+  remote_user: root
+  tasks:
+    # UFW
+    - name: Install ufw
+      ansible.builtin.apt:
+        name: ufw
+        update_cache: true
+        state: present
+    - name: Set ufw logging
+      community.general.ufw:
+        logging: on
+    - name: Enable ufw ssh
+      community.general.ufw:
+        rule: limit
+        name: OpenSSH
+    - name: Allow ufw outgoing
+      community.general.ufw:
+        state: enabled
+        direction: outgoing
+        policy: allow
+    - name: Disallow ufw incoming
+      community.general.ufw:
+        state: enabled
+        direction: incoming
+        policy: deny
+    - name: Allow ufw http traffic
+      community.general.ufw:
+        rule: allow
+        port: "80"
+        proto: tcp
+    - name: Allow ufw https traffic
+      community.general.ufw:
+        rule: allow
+        port: "443"
+        proto: tcp
+    - name: Enable ufw
+      community.general.ufw:
+        state: enabled
+    # Caddy
+    - name: Install Caddy deps
+      ansible.builtin.apt:
+        name:
+          - debian-keyring
+          - debian-archive-keyring
+          - apt-transport-https
+          - curl
+        update_cache: true
+        state: present
+    - name: Add caddy stable archive keyring
+      ansible.builtin.shell: curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
+      args:
+        creates: /usr/share/keyrings/caddy-stable-archive-keyring.gpg
+    - name: Add caddy source list
+      ansible.builtin.shell: curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | tee /etc/apt/sources.list.d/caddy-stable.list
+      args:
+        creates: /etc/apt/sources.list.d/caddy-stable.list
+    - name: Install caddy
+      ansible.builtin.apt:
+        name: caddy
+        update_cache: true
+        state: present
+    - name: Enable caddy
+      ansible.builtin.systemd:
+        name: caddy
+        enabled: true
+    - name: Copy Caddyfile
+      ansible.builtin.template:
+        src: templates/Caddyfile.j2
+        dest: /etc/caddy/Caddyfile
+        owner: caddy
+        group: caddy
+        mode: u=rw,g=r,o=r
+    - name: Restart caddy
+      ansible.builtin.systemd:
+        name: caddy
+        state: restarted
+    # Postgres
+    - name: Create the file repository configuration
+      ansible.builtin.shell: sh -c 'echo "deb https://apt.postgresql.org/pub/repos/apt {{ansible_distribution_release}}-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
+      args:
+        creates: /etc/apt/sources.list.d/pgdg.list
+    - name: Import the repository signing key
+      ansible.builtin.shell: wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | apt-key add -
+      args:
+        creates: /etc/apt/trusted.gpg.d/apt.postgresql.org.gpg
+    - name: Install Postgres
+      ansible.builtin.apt:
+        name: postgresql
+        update_cache: true
+        state: present
+    - name: Enable postgresql
+      ansible.builtin.systemd:
+        name: postgresql
+        enabled: true
+    # Databases
+    - name: Install ansible postgresql helpers deps
+      ansible.builtin.apt:
+        name:
+          - libpq-dev
+          - python3-psycopg2
+        update_cache: true
+        state: present
+    - name: Create {{db_user}} postgres user
+      become: true
+      become_user: postgres
+      community.postgresql.postgresql_user:
+        name: "{{db_user}}"
+        password: "{{db_user_password}}"
+    - name: Create {{db_name}} postgres database
+      become: true
+      become_user: postgres
+      community.postgresql.postgresql_db:
+        name: "{{db_name}}"
+        encoding: UTF-8
+        owner: "{{db_name}}"
+    # Node
+    - name: Install node deps
+      ansible.builtin.apt:
+        name:
+          - curl
+          - software-properties-common
+        update_cache: true
+        state: present
+    - name: Add NodeSource repository
+      ansible.builtin.shell: curl -fsSL https://deb.nodesource.com/setup_21.x | bash -
+      args:
+        creates: /etc/apt/sources.list.d/nodesource.list
+    - name: Install node
+      ansible.builtin.apt:
+        name: nodejs
+        update_cache: true
+        state: present
+    - name: Install pm2
+      community.general.npm:
+        name: pm2
+        global: true
+    # Code
+    - name: Pull the code
+      ansible.builtin.git:
+        repo: "{{project_git_url}}"
+        dest: "{{project_dir}}"
+    - name: Install code dependencies
+      community.general.npm:
+        path: "{{project_dir}}"
+    - name: Copy app .env
+      ansible.builtin.template:
+        src: templates/app.env.j2
+        dest: "{{project_dir}}/app/.env"
+    - name: Copy servie .env
+      ansible.builtin.template:
+        src: templates/service.env.j2
+        dest: "{{project_dir}}/service/.env"
+    - name: Build app
+      ansible.builtin.shell:
+        cmd: npm run build
+        chdir: "{{project_dir}}/app"
+    # Database migrations
+    - name: Migrate persistence
+      ansible.builtin.shell:
+        cmd: npm run migrate
+        chdir: "{{project_dir}}/persistence"
+    - name: Seed persistence
+      ansible.builtin.shell:
+        cmd: npm run seed
+        chdir: "{{project_dir}}/persistence"
+    # Start everything
+    - name: Start service
+      ansible.builtin.shell:
+        cmd: pm2 start npm --name service -- start
+        chdir: "{{project_dir}}/service"
+    - name: pm2 startup
+      ansible.builtin.shell:
+        cmd: pm2 startup
+    - name: pm2 save
+      ansible.builtin.shell:
+        cmd: pm2 save
+    # Docker
+    - name: Add Docker GPG apt Key
+      apt_key:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        state: present
+    - name: Add Docker Repository
+      apt_repository:
+        repo: deb https://download.docker.com/linux/ubuntu {{ansible_distribution_release}} stable
+        state: present
+    - name: Update apt and install docker-ce
+      apt:
+        name: docker-ce
+        state: latest
+        update_cache: true
+    - name: Install docker python library
+      ansible.builtin.apt:
+        name: python3-docker
+        update_cache: true
+        state: present
+    # PgAdmin
+    - name: Install pgadmin docker image
+      community.docker.docker_container:
+        name: pgadmin
+        image: dpage/pgadmin4
+        state: started
+        restart_policy: unless-stopped
+        ports:
+          - "127.0.0.1:{{pgadmin_port}}:80"
+        env:
+          PGADMIN_DEFAULT_EMAIL: "{{pgadmin_default_email}}"
+          PGADMIN_DEFAULT_PASSWORD: "{{pgadmin_default_password}}"
+    # OpenObserve
+    - name: Instal OpenObserve docker image
+      community.docker.docker_container:
+        name: openobserve
+        image: public.ecr.aws/zinclabs/openobserve:latest
+        state: started
+        restart_policy: unless-stopped
+        ports:
+          - "127.0.0.1:{{openobserve_port}}:5080"
+        env:
+          ZO_ROOT_USER_EMAIL: "{{openobserve_default_username}}"
+          ZO_ROOT_USER_PASSWORD: "{{openobserve_default_password}}"
