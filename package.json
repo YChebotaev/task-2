@@ -4,5 +4,8 @@
     "common",
     "persistence",
     "service"
-  ]
+  ],
+  "scripts": {
+    "update": "ansible-playbook -i ansible/inventory.yml ansible/update.yml"
+  }
 }

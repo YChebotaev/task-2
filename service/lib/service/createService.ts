@@ -441,25 +441,28 @@ export const createService = async ({ logger }: { logger: Logger }) => {
             items: {
               type: 'array',
               items: {
-                tags: {
-                  type: 'array',
-                  items: {
-                    type: 'object',
-                    required: ['id'],
-                    properties: {
-                      id: { type: 'number' },
-                      title: { type: 'string' },
-                      slug: { type: 'string' },
+                type: 'object',
+                properties: {
+                  tags: {
+                    type: 'array',
+                    items: {
+                      type: 'object',
+                      required: ['id'],
+                      properties: {
+                        id: { type: 'number' },
+                        title: { type: 'string' },
+                        slug: { type: 'string' },
+                      }
                     }
-                  }
-                },
-                content: {},
-                commentsCount: { type: 'number' },
-                authorId: { type: 'number' },
-                title: { type: 'string' },
-                subscribed: { type: 'boolean' },
-                createdAt: { type: 'number' },
-                upatedAt: { type: 'number' }
+                  },
+                  content: {},
+                  commentsCount: { type: 'number' },
+                  authorId: { type: 'number' },
+                  title: { type: 'string' },
+                  subscribed: { type: 'boolean' },
+                  createdAt: { type: 'number' },
+                  upatedAt: { type: 'number' }
+                }
               }
             }
           }
