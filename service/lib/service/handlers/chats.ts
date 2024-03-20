@@ -1,4 +1,5 @@
 import { errorCodes } from "fastify"
+import { sortBy } from "lodash"
 import {
   chatCreate,
   chatGet,
@@ -8,10 +9,11 @@ import {
   directMessagesFind,
   userGet
 } from "@task-2/persistence"
-import { groupBy, intersectionBy, sortBy, unionBy } from "lodash"
 
 export const getChatsOfUser = async (userId: number) => {
-  const members = await chatMembersFind({ userId })
+  const members = (
+    await chatMembersFind({ userId })
+  ).filter(({ userId: u }) => u !== userId)
 
   return Promise.all(
     members.map(({ userId: u }) => getChatForUser(userId, u))
