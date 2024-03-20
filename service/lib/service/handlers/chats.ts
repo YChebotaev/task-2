@@ -10,13 +10,41 @@ import {
   userGet
 } from "@task-2/persistence"
 
+export const getChat = async (chatId: number) => {
+  const chat = await chatGet(chatId)
+
+  if (!chat) {
+    throw new errorCodes.FST_ERR_NOT_FOUND('Can\'t find chat by id')
+  }
+
+  const [initiatorMember] = await chatMembersFind({ chatId, type: 'initiator' })
+  const [recepientMember] = await chatMembersFind({ chatId, type: 'recepient' })
+
+  if (!initiatorMember || !recepientMember) {
+    throw new errorCodes.FST_ERR_NOT_FOUND("Can\'t find one of chat participants")
+  }
+
+  const initiator = await userGet(initiatorMember.userId)
+  const recepient = await userGet(recepientMember.userId)
+
+  if (!initiator || !recepient) {
+    throw new errorCodes.FST_ERR_NOT_FOUND('Can\'t find one of chat participants')
+  }
+
+  return {
+    id: chat.id,
+    initiator,
+    recepient,
+    createdAt: chat.createdAt,
+    updatedAt: chat.updatedAt
+  }
+}
+
 export const getChatsOfUser = async (userId: number) => {
-  const members = (
-    await chatMembersFind({ userId })
-  ).filter(({ userId: u }) => u !== userId)
+  const members = await chatMembersFind({ userId })
 
   return Promise.all(
-    members.map(({ userId: u }) => getChatForUser(userId, u))
+    members.map(({ chatId }) => getChat(chatId))
   )
 }
 
@@ -25,7 +53,7 @@ export const getChatForUser = async (initiatorId: number, recepientId: number) =
   const recepient = await userGet(recepientId)
 
   if (!initiator || !recepient) {
-    throw new errorCodes.FST_ERR_NOT_FOUND('Can\'t found one of chat participants')
+    throw new errorCodes.FST_ERR_NOT_FOUND('Can\'t find one of chat participants')
   }
 
   const initiatorMembers = await chatMembersFind({ userId: initiatorId })
