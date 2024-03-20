@@ -18,5 +18,7 @@ export const postCommentsCount = async (id: number) => {
     .count()
     .first()
 
+  console.log('result =', result)
+
   return result ? Reflect.get(result, 'count(*)') as number : 0
 }

@@ -20,7 +20,7 @@ export const useStreamSubscription = (
         queryKey: ["streams", { slug: stream.slug }],
       });
       queryClient.invalidateQueries({
-        queryKey: ["my", "subscriptions"],
+        queryKey: ["users", "me", "subscriptions"],
       });
     },
   });
@@ -35,7 +35,7 @@ export const useStreamSubscription = (
         queryKey: ["streams", { slug: stream.slug }],
       });
       queryClient.invalidateQueries({
-        queryKey: ["my", "subscriptions"],
+        queryKey: ["users", "me", "subscriptions"],
       });
     },
   });
