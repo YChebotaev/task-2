@@ -3,9 +3,10 @@ import { Menu } from "antd";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router";
 import type { MySubscriptionsResult } from "@task-2/service/types";
-import type { Chat as ChatType, User as UserType } from "@task-2/service/types";
+import type { User as UserType } from "@task-2/service/types";
 import { useApiClient } from "../hooks/useApiClient";
 import { useUser } from "./UserProvider";
+import { useChats } from "../hooks/useChats";
 
 export const MyMenu: FC = () => {
   const apiClient = useApiClient();
@@ -22,19 +23,12 @@ export const MyMenu: FC = () => {
       return data;
     },
   });
-  const { data: chats } = useSuspenseQuery({
-    queryKey: ["users", "me", "chats"],
-    async queryFn() {
-      const { data } = await apiClient.get<ChatType[]>("/users/me/chats");
-
-      return data;
-    },
-  });
-  const getChatLabel = (initiator: UserType, recepient: UserType) => {
+  const chats = useChats();
+  const getChatUsername = (initiator: UserType, recepient: UserType) => {
     if (initiator.id === me.id) {
-      return initiator.username;
-    } else if (recepient.id === me.id) {
       return recepient.username;
+    } else if (recepient.id === me.id) {
+      return initiator.username;
     }
   };
 
@@ -81,9 +75,9 @@ export const MyMenu: FC = () => {
           key: "chats",
           type: "group",
           label: "Личные сообщения",
-          children: chats.map(({ id, initiator, recepient }) => ({
+          children: chats.map(({ id, initiator, recepient, unreadCount }) => ({
             key: `chat:${id}`,
-            label: getChatLabel(initiator, recepient),
+            label: `${getChatUsername(initiator, recepient)} (${unreadCount})`,
           })),
         },
       ]}

@@ -7,6 +7,7 @@ export const up = async (knex: Knex): Promise<void> =>
     table.integer('chatId')
     table.integer('userId')
     table.enum('type', ['initiator', 'recepient'])
+    table.integer('unreadCount').defaultTo(0)
 
     table.bigInteger('createdAt')
     table.bigInteger('updatedAt').nullable()

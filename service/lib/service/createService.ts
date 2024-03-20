@@ -2,6 +2,7 @@ import { promisify } from 'node:util'
 import { pipeline } from 'node:stream'
 import { createWriteStream } from 'node:fs'
 import path from 'node:path'
+import { Server as SocketIOServer } from 'socket.io'
 import fastify, { errorCodes } from 'fastify'
 import fastifyMultipart from '@fastify/multipart'
 import fastifyCors from '@fastify/cors'
@@ -17,6 +18,39 @@ const pump = promisify(pipeline)
 
 export const createService = async ({ logger }: { logger: Logger }) => {
   const server = fastify({ logger })
+
+  const io = new SocketIOServer(server.server, {
+    serveClient: false,
+    cors: { origin: '*' }
+  })
+
+  io.on('connection', async (socket) => {
+    try {
+      const { token } = socket.handshake.auth as { token: string }
+
+      if (!token) {
+        throw new Error('Token not provided')
+      }
+
+      const { userId } = await validateSession({ authorization: `Bearer ${token}` }, true)
+
+      await socket.join(`user:${userId!}`)
+
+      socket.on('disconnect', async () => {
+        try {
+          await socket.leave(`user:${userId!}`)
+        } catch (e) {
+          logger.error(e)
+        }
+      })
+    } catch (e) {
+      console.error(e)
+
+      logger.error(e)
+
+      socket.disconnect(true)
+    }
+  })
 
   await server.register(fastifyMultipart)
   await server.register(fastifyCors, { origin: true })
@@ -202,6 +236,7 @@ export const createService = async ({ logger }: { logger: Logger }) => {
                   subscribed: { type: 'boolean' },
                 }
               },
+              unreadCount: { type: 'number' },
               createdAt: { type: 'number' },
               updatedAt: { type: 'number' },
             }
@@ -659,6 +694,7 @@ export const createService = async ({ logger }: { logger: Logger }) => {
                 subscribed: { type: 'boolean' },
               }
             },
+            unreadCount: { type: 'number' },
             createdAt: { type: 'number' },
             updatedAt: { type: 'number' }
           }
@@ -674,9 +710,9 @@ export const createService = async ({ logger }: { logger: Logger }) => {
 
   server.get<{
     Params: {
-      userId: string
+      chatId: string
     }
-  }>('/users/:userId/chat/messages', {
+  }>('/chats/:chatId/messages', {
     schema: {
       response: {
         200: {
@@ -695,36 +731,57 @@ export const createService = async ({ logger }: { logger: Logger }) => {
         }
       }
     }
-  }, async ({ headers, params: { userId: userIdStr } }) => {
-    const { userId: myId } = await validateSession(headers, true)
-    const userId = parseNumber(userIdStr)
+  }, async ({ headers, params: { chatId: chatIdStr } }) => {
+    await validateSession(headers, true)
+    const chatId = parseNumber(chatIdStr)
 
-    return handlers.chats.getMessages(myId!, userId)
+    if (chatId === -1) return []
+
+    return handlers.chats.getMessages(chatId)
   })
 
   server.post<{
     Params: {
-      userId: string
+      chatId: string
+    }
+  }>('/chats/:chatId/messages/mark_read', async ({ headers, params: { chatId: chatIdStr } }) => {
+    const { userId: myId } = await validateSession(headers, true)
+    const chatId = parseNumber(chatIdStr)
+
+    await handlers.chats.markRead(chatId, myId!)
+  })
+
+  server.post<{
+    Params: {
+      chatId: string
     },
     Body: {
+      recepientId: number
       content: object
     }
-  }>('/users/:userId/chat/messages', {
+  }>('/chats/:chatId/messages', {
     schema: {
       body: {
         type: 'object',
         additionalProperties: false,
         required: ['content'],
         properties: {
+          recepientId: { type: 'number', minimum: 1 },
           content: {}
         }
       }
     }
-  }, async ({ headers, params: { userId: userIdStr }, body: { content } }) => {
+  }, async ({ headers, params: { chatId: chatIdStr }, body: { content, recepientId } }) => {
     const { userId: myId } = await validateSession(headers, true)
-    const userId = parseNumber(userIdStr)
+    let chatId = parseNumber(chatIdStr)
 
-    await handlers.chats.sendMessage(myId!, userId, content)
+    if (chatId === -1) {
+      ; ({ chatId } = await handlers.chats.createChat(myId!, recepientId))
+    }
+
+    await handlers.chats.sendMessage(chatId, myId!, recepientId, content)
+
+    io.to(`user:${recepientId}`).emit('new-message')
   })
 
   server.post('/upload', async (req) => {

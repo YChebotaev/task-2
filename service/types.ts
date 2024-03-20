@@ -76,6 +76,7 @@ export type Chat = {
   id: number
   initiator: User
   recepient: User
+  unreadCount: number
   createdAt: number
   updatedAt: number
 }

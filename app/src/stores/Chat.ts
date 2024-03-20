@@ -6,6 +6,7 @@ export class Chat implements ChatType {
   id: number
   initiator: User
   recepient: User
+  unreadCount: number
   createdAt: number
   updatedAt: number
 
@@ -13,6 +14,7 @@ export class Chat implements ChatType {
     this.id = chat.id
     this.initiator = new User(chat.initiator)
     this.recepient = new User(chat.recepient)
+    this.unreadCount = chat.unreadCount
     this.createdAt = chat.createdAt
     this.updatedAt = chat.updatedAt
 

@@ -1,4 +1,4 @@
-import { Chat as ChatStore } from "../../stores/Chat";
+import { FC, useEffect, useState } from "react";
 import { Button, Empty, Typography } from "antd";
 import {
   useMutation,
@@ -11,11 +11,7 @@ import { ContentEditable } from "@lexical/react/LexicalContentEditable";
 import { OnChangePlugin } from "@lexical/react/LexicalOnChangePlugin";
 import LexicalErrorBoundary from "@lexical/react/LexicalErrorBoundary";
 import { type SerializedEditorState } from "lexical";
-import type {
-  Chat as ChatType,
-  DirectMessage as DirectMessageType,
-} from "@task-2/service/types";
-import { FC, useState } from "react";
+import type { Chat as ChatType } from "@task-2/service/types";
 import {
   Root,
   MessagesContainer,
@@ -23,9 +19,10 @@ import {
   EmptyContainer,
 } from "./styled";
 import { useApiClient } from "../../hooks/useApiClient";
-import { DirectMessage as DirectMessageStore } from "../../stores/DirectMessage";
 import { Message } from "./Message/Message";
 import { EditorPlaceholder } from "../EditorPlaceholder";
+import { useChatMessages } from "../../hooks/useChatMessages";
+import { Chat as ChatStore } from "../../stores/Chat";
 
 export const Chat: FC<{ recepientId: number }> = ({ recepientId }) => {
   const apiClient = useApiClient();
@@ -44,30 +41,13 @@ export const Chat: FC<{ recepientId: number }> = ({ recepientId }) => {
       return new ChatStore(data);
     },
   });
-  const { data: messages } = useSuspenseQuery({
-    queryKey: ["users", recepientId, "chat", "messages"],
-    refetchInterval: 900,
-    async queryFn() {
-      if (chat.id === -1) {
-        return [];
-      }
-
-      const { data } = await apiClient.get<DirectMessageType[]>(
-        `/users/${recepientId}/chat/messages`,
-      );
-
-      return data;
-    },
-    select(data) {
-      return data.map((m) => new DirectMessageStore(m));
-    },
-  });
+  const messages = useChatMessages(chat.id);
   const { mutate: send } = useMutation({
     async mutationFn() {
-      const { data } = await apiClient.post(
-        `/users/${recepientId}/chat/messages`,
-        { content },
-      );
+      const { data } = await apiClient.post(`/chats/${chat.id}/messages`, {
+        content,
+        recepientId,
+      });
 
       return data;
     },
@@ -79,10 +59,19 @@ export const Chat: FC<{ recepientId: number }> = ({ recepientId }) => {
       }
 
       queryClient.invalidateQueries({
-        queryKey: ["users", recepientId, "chat", "messages"],
+        queryKey: ["chats", chat.id, "messages"],
       });
     },
   });
+  const { mutate: markRead } = useMutation({
+    async mutationFn() {
+      await apiClient.post(`/chats/${chat.id}/messages/mark_read`);
+    },
+  });
+
+  useEffect(() => {
+    markRead();
+  }, [markRead]);
 
   return (
     <Root>
@@ -98,10 +87,7 @@ export const Chat: FC<{ recepientId: number }> = ({ recepientId }) => {
           </EmptyContainer>
         ) : (
           messages.map((message) => (
-            <Message
-              key={message.id}
-              message={message}
-            />
+            <Message key={message.id} message={message} />
           ))
         )}
       </MessagesContainer>

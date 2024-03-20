@@ -83,6 +83,8 @@ export type CommentFindProps = Partial<Pick<Comment, 'postId' | 'authorId' | 'pa
 
 export type Chat = {
   id: number
+  initiatorId: number
+  recepientId: number
   createdAt: number
   updatedAt: number
 }
@@ -96,6 +98,7 @@ export type ChatMember = {
   id: number
   chatId: number
   userId: number
+  unreadCount: number
   type: ChatMemberType
 }
 
