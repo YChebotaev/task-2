@@ -28,11 +28,12 @@ export const getChatForUser = async (initiatorId: number, recepientId: number) =
 
   const initiatorMembers = await chatMembersFind({ userId: initiatorId })
   const recepientMembers = await chatMembersFind({ userId: recepientId })
-  const inBothChats = intersectionBy(initiatorMembers, recepientMembers, 'chatId')
-  const byUserChats = groupBy(inBothChats, 'userId')
-  const { chatId } = (byUserChats[initiatorId] ?? byUserChats[recepientId] ?? [])[0] ?? {}
 
-  if (!chatId) {
+  const chatsBothAreMembers = initiatorMembers.filter(initiatorMember =>
+    recepientMembers.some(recepientMember => initiatorMember.chatId === recepientMember.chatId)
+  );
+
+  if (chatsBothAreMembers.length === 0) {
     return {
       id: -1,
       initiator,
@@ -41,6 +42,7 @@ export const getChatForUser = async (initiatorId: number, recepientId: number) =
     }
   }
 
+  const chatId = chatsBothAreMembers[0].chatId
   const chat = await chatGet(chatId)
 
   if (!chat) {
