@@ -263,7 +263,27 @@ export const createService = async ({ logger }: { logger: Logger }) => {
     Params: {
       postId: string
     }
-  }>('/posts/:postId/comments', async ({ headers, params: { postId: postIdStr } }) => {
+  }>('/posts/:postId/comments', {
+    schema: {
+      response: {
+        200: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              id: { type: 'number' },
+              postId: { type: 'number' },
+              authorId: { type: 'number' },
+              parentId: { type: 'number' },
+              content: {},
+              createdAt: { type: 'number' },
+              updatedAt: { type: 'number' },
+            }
+          }
+        }
+      }
+    }
+  }, async ({ headers, params: { postId: postIdStr } }) => {
     const { userId } = await validateSession(headers)
     const postId = parseNumber(postIdStr)
 
