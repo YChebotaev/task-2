@@ -432,6 +432,38 @@ export const createService = async ({ logger }: { logger: Logger }) => {
           limit: { type: 'number', minimum: 1 },
           offset: { type: 'number', minimum: 0 },
         }
+      },
+      response: {
+        200: {
+          type: 'object',
+          properties: {
+            total: { type: 'number' },
+            items: {
+              type: 'array',
+              items: {
+                tags: {
+                  type: 'array',
+                  items: {
+                    type: 'object',
+                    required: ['id'],
+                    properties: {
+                      id: { type: 'number' },
+                      title: { type: 'string' },
+                      slug: { type: 'string' },
+                    }
+                  }
+                },
+                content: {},
+                commentsCount: { type: 'number' },
+                authorId: { type: 'number' },
+                title: { type: 'string' },
+                subscribed: { type: 'boolean' },
+                createdAt: { type: 'number' },
+                upatedAt: { type: 'number' }
+              }
+            }
+          }
+        }
       }
     }
   }, async ({ headers, params: { streamId: streamIdStr }, query: { limit: limitStr, offset: offsetStr } }) => {
