@@ -274,7 +274,12 @@ export const createService = async ({ logger }: { logger: Logger }) => {
               id: { type: 'number' },
               postId: { type: 'number' },
               authorId: { type: 'number' },
-              parentId: { type: 'number' },
+              parentId: {
+                oneOf: [
+                  { type: 'number' },
+                  { type: 'null' }
+                ]
+              },
               content: {},
               createdAt: { type: 'number' },
               updatedAt: { type: 'number' },
