@@ -3,14 +3,15 @@ import { Menu } from "antd";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router";
 import type { MySubscriptionsResult } from "@task-2/service/types";
-import type { Chat } from "@task-2/service/types";
+import type { Chat as ChatType, User as UserType } from "@task-2/service/types";
 import { useApiClient } from "../hooks/useApiClient";
 import { useUser } from "./UserProvider";
 
 export const MyMenu: FC = () => {
   const apiClient = useApiClient();
   const navigate = useNavigate();
-  const isAuthenticated = Boolean(useUser());
+  const me = useUser();
+  const isAuthenticated = Boolean(me);
   const { data: subscriptions } = useSuspenseQuery({
     queryKey: ["users", "me", "subscriptions"],
     async queryFn() {
@@ -24,11 +25,18 @@ export const MyMenu: FC = () => {
   const { data: chats } = useSuspenseQuery({
     queryKey: ["users", "me", "chats"],
     async queryFn() {
-      const { data } = await apiClient.get<Chat[]>("/users/me/chats");
+      const { data } = await apiClient.get<ChatType[]>("/users/me/chats");
 
       return data;
     },
   });
+  const getChatLabel = (initiator: UserType, recepient: UserType) => {
+    if (initiator.id === me.id) {
+      return recepient.username;
+    } else if (recepient.id === me.id) {
+      return initiator.username;
+    }
+  };
 
   if (!isAuthenticated) {
     return null;
@@ -73,9 +81,9 @@ export const MyMenu: FC = () => {
           key: "chats",
           type: "group",
           label: "Личные сообщения",
-          children: chats.map(({ id, recepient }) => ({
+          children: chats.map(({ id, initiator, recepient }) => ({
             key: `chat:${id}`,
-            label: recepient.username,
+            label: getChatLabel(initiator, recepient),
           })),
         },
       ]}
