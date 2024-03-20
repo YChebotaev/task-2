@@ -17,7 +17,7 @@ export const useUserSubscription = (user: User) => {
         queryKey: ["users", user.id],
       });
       queryClient.invalidateQueries({
-        queryKey: ["my", "subscriptions"],
+        queryKey: ["users", "me", "subscriptions"],
       });
     },
   });
@@ -29,7 +29,7 @@ export const useUserSubscription = (user: User) => {
       user.unsubscribe();
 
       queryClient.invalidateQueries({
-        queryKey: ["my", "subscriptions"],
+        queryKey: ["users", "me", "subscriptions"],
       });
       queryClient.invalidateQueries({
         queryKey: ["users", user.id],
