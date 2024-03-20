@@ -443,6 +443,7 @@ export const createService = async ({ logger }: { logger: Logger }) => {
               items: {
                 type: 'object',
                 properties: {
+                  id: { type: 'number' },
                   tags: {
                     type: 'array',
                     items: {
