@@ -32,9 +32,9 @@ export const MyMenu: FC = () => {
   });
   const getChatLabel = (initiator: UserType, recepient: UserType) => {
     if (initiator.id === me.id) {
-      return recepient.username;
-    } else if (recepient.id === me.id) {
       return initiator.username;
+    } else if (recepient.id === me.id) {
+      return recepient.username;
     }
   };
 
