@@ -12,8 +12,8 @@ export const userSessionsFind = createFindOperation<UserSession, UserSessionFind
 
 export const userSessionDelete = createDeleteOperation('userSessions')
 
-export const userSessionUpdate = async (id: number, { accessToken, refreshToken }: Pick<UserSession, 'accessToken' | 'refreshToken'>) => {
+export const userSessionUpdate = async (id: number, { accessToken }: Pick<UserSession, 'accessToken'>) => {
   await knex('userSessions')
-    .update({ accessToken, refreshToken })
+    .update({ accessToken })
     .where('id', id)
 }

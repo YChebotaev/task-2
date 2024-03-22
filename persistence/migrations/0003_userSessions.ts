@@ -7,7 +7,6 @@ export const up = async (knex: Knex): Promise<void> =>
     table.integer("userId")
 
     table.string('accessToken')
-    table.string('refreshToken')
 
     table.foreign("userId").references("id").inTable("users");
 

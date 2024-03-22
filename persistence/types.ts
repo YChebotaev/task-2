@@ -47,10 +47,9 @@ export type UserSession = {
   id: number
   userId: number
   accessToken: string
-  refreshToken: string
 }
 
-export type UserSessionCreateProps = Omit<UserSession, 'id' | 'accessToken' | 'refreshToken'>
+export type UserSessionCreateProps = Omit<UserSession, 'id' | 'accessToken'>
 
 export type UserSessionFindProps = Partial<Pick<UserSession, 'userId' | 'accessToken'>>
 

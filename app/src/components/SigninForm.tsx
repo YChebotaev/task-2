@@ -29,9 +29,8 @@ export const SigninForm: FC = () => {
     onMutate() {
       setError(null);
     },
-    onSuccess({ accessToken, refreshToken }) {
+    onSuccess({ accessToken }) {
       localStorage.setItem("accessToken", accessToken);
-      localStorage.setItem("refreshToken", refreshToken);
 
       queryClient.invalidateQueries({
         queryKey: ["users", "me"],

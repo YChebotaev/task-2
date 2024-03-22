@@ -1,6 +1,6 @@
 import { randomBytes, createHash } from 'node:crypto'
 import { errorCodes } from 'fastify'
-import { addDays, subHours } from 'date-fns'
+import { addDays } from 'date-fns'
 import jwt from 'jsonwebtoken'
 import { validateUsername } from '@task-2/common/validateUsername'
 import {
@@ -26,17 +26,10 @@ const createSession = async (userId: number) => {
     jwtid: String(userSessionId)
   })
 
-  const refreshToken = jwt.sign({}, process.env['JWT_SECRET']!, {
-    subject: String(userId),
-    expiresIn: Math.ceil(addDays(expiresIn * 1000, 7).getTime() / 1000),
-    notBefore: Math.ceil(subHours(expiresIn * 1000, 1).getDate() / 1000)
-  })
-
-  await userSessionUpdate(userSessionId, { accessToken, refreshToken })
+  await userSessionUpdate(userSessionId, { accessToken })
 
   return {
-    accessToken,
-    refreshToken
+    accessToken
   }
 }
 
@@ -170,5 +163,3 @@ export const signup = async (
 
   return createSession(userId)
 }
-
-export const signout = async () => { }

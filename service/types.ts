@@ -9,12 +9,10 @@ export type FastifyError = {
 
 export type SignupResult = {
   accessToken: string
-  refreshToken: string
 }
 
 export type SigninResult = {
   accessToken: string
-  refreshToken: string
 }
 
 export type Paginated<T> = {

@@ -118,18 +118,13 @@ export const createService = async ({ logger }: { logger: Logger }) => {
         200: {
           type: 'object',
           properties: {
-            accessToken: { type: 'string' },
-            refreshToken: { type: 'string' }
+            accessToken: { type: 'string' }
           }
         }
       }
     }
   }, async ({ body: { username, email, password, passwordConfirm } }) => {
     return handlers.auth.signup(username, email, password, passwordConfirm)
-  })
-
-  server.post('/auth/signout', async () => {
-    return handlers.auth.signout()
   })
 
   server.get('/users/me', {
