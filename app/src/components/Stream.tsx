@@ -1,6 +1,6 @@
 import { ReactNode, type FC } from "react";
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { Pagination } from "antd";
+import { Empty, Pagination } from "antd";
 import { Post as PostStore } from "../stores/Post";
 import type {
   Paginated,
@@ -57,6 +57,15 @@ export const Stream: FC<{
       };
     },
   });
+
+  if (posts.total === 0) {
+    return (
+      <div>
+        {title && title(stream)}
+        <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="Нет постов" />
+      </div>
+    );
+  }
 
   return (
     <div>

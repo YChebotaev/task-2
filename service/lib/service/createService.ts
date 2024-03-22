@@ -187,6 +187,38 @@ export const createService = async ({ logger }: { logger: Logger }) => {
   })
 
   server.post<{
+    Params: {
+      userId: string
+    }
+    Body: {
+      bio: string
+      firstName: string
+      lastName: string
+      dateOfBirth: number
+      country: string
+      city: string
+    }
+  }>('/users/me/profile', {
+    schema: {
+      body: {
+        type: 'object',
+        properties: {
+          bio: { type: 'string' },
+          firstName: { type: 'string' },
+          lastName: { type: 'string' },
+          dateOfBirth: { type: 'number' },
+          country: { type: 'string' },
+          city: { type: 'string' },
+        }
+      }
+    }
+  }, async ({ headers, body }) => {
+    const { userId } = await validateSession(headers, true)
+
+    return handlers.profile.updateProfile(userId!, body)
+  })
+
+  server.post<{
     Body: {
       id: number
     }
@@ -639,6 +671,33 @@ export const createService = async ({ logger }: { logger: Logger }) => {
     const userId = parseNumber(userIdStr)
 
     return handlers.users.getUserById(myId, userId)
+  })
+
+  server.get<{
+    Params: {
+      userId: string
+    }
+  }>('/users/:userId/profile', {
+    schema: {
+      response: {
+        200: {
+          type: 'object',
+          properties: {
+            id: { type: 'number' },
+            bio: { type: 'string' },
+            firstName: { type: 'string' },
+            lastName: { type: 'string' },
+            dateOfBirth: { type: 'number' },
+            country: { type: 'string' },
+            city: { type: 'string' },
+          }
+        }
+      }
+    }
+  }, async ({ params: { userId: userIdStr } }) => {
+    const userId = parseNumber(userIdStr)
+
+    return handlers.profile.getProfileOfUser(userId)
   })
 
   server.post<{

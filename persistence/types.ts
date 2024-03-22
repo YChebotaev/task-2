@@ -27,6 +27,22 @@ export type UserCreateProps = Omit<User, 'id'>
 export type UserFindProps = Partial<Pick<User, 'username' | 'email'>>
 
 
+export type UserProfile = {
+  id: number
+  userId: number
+  bio: string
+  firstName: string
+  lastName: string
+  dateOfBirth: number
+  country: string
+  city: string
+}
+
+export type UserProfileCreateProps = Pick<UserProfile, 'userId'>
+
+export type UserProfileFindProps = Partial<Pick<UserProfile, 'userId'>>
+
+
 export type UserSession = {
   id: number
   userId: number

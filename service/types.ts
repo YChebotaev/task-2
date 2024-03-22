@@ -30,6 +30,16 @@ export type User = {
   subscribed?: boolean
 }
 
+export type UserProfile = {
+  id: number
+  bio: string
+  firstName: string
+  lastName: string
+  dateOfBirth: number
+  country: string
+  city: string
+}
+
 export type Stream = {
   id: number
   title: string

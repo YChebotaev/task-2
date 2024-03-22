@@ -11,7 +11,8 @@ import {
   userStreamSubscriptionCreate,
   streamGetBySlug,
   streamCreate,
-  type User
+  type User,
+  userProfileCreate
 } from '@task-2/persistence'
 
 const createSession = async (userId: number) => {
@@ -163,6 +164,7 @@ export const signup = async (
     passwordSalt
   })
 
+  await userProfileCreate({ userId })
   await createUserStream(userId, username)
   await subscribeToEverythingStream(userId)
 

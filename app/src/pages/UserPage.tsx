@@ -11,6 +11,7 @@ import { ProfileControls } from "../components/ProfileControls";
 import { usePagination } from "../hooks/usePagination";
 import { Stream } from "../components/Stream";
 import { Typography } from "antd";
+import { Profile } from "../components/Profile";
 
 type UserPageParams = {
   username: string;
@@ -40,6 +41,7 @@ export const UserPage: FC = () => {
     <AppLayout noContentPadding>
       <UserCover myself={myself} user={user} />
       {myself && <ProfileControls onChange={refetch} />}
+      <Profile editable={myself} userId={user.id} />
       <div style={{ padding: "1rem" }}>
         <Stream
           page={page}
