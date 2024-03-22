@@ -127,6 +127,159 @@ export const createService = async ({ logger }: { logger: Logger }) => {
     return handlers.auth.signup(username, email, password, passwordConfirm)
   })
 
+  server.get<{
+    Querystring: {
+      username: string
+    }
+  }>('/users', {
+    schema: {
+      querystring: {
+        type: 'object',
+        additionalProperties: false,
+        required: ['username'],
+        properties: {
+          username: { type: 'string', minLength: 1, maxLength: 255 }
+        }
+      },
+      response: {
+        200: {
+          type: 'object',
+          properties: {
+            id: { type: 'number' },
+            username: { type: 'string' },
+            avatarSrc: { type: 'string' },
+            coverSrc: { type: 'string' },
+            subscribed: { type: 'boolean' },
+          }
+        }
+      }
+    }
+  }, async ({ headers, query: { username } }) => {
+    const { userId } = await validateSession(headers)
+
+    return handlers.users.getUserByUsername(userId, username)
+  })
+
+  server.get<{
+    Params: {
+      userId: string
+    }
+  }>('/users/:userId', {
+    schema: {
+      response: {
+        200: {
+          type: 'object',
+          properties: {
+            id: { type: 'number' },
+            username: { type: 'string' },
+            avatarSrc: { type: 'string' },
+            coverSrc: { type: 'string' },
+            subscribed: { type: 'boolean' },
+          }
+        }
+      }
+    }
+  }, async ({ headers, params: { userId: userIdStr } }) => {
+    const { userId: myId } = await validateSession(headers)
+    const userId = parseNumber(userIdStr)
+
+    return handlers.users.getUserById(myId, userId)
+  })
+
+  server.get<{
+    Params: {
+      userId: string
+    }
+  }>('/users/:userId/profile', {
+    schema: {
+      response: {
+        200: {
+          type: 'object',
+          properties: {
+            id: { type: 'number' },
+            bio: { type: 'string' },
+            firstName: { type: 'string' },
+            lastName: { type: 'string' },
+            dateOfBirth: { type: 'number' },
+            country: { type: 'string' },
+            city: { type: 'string' },
+          }
+        }
+      }
+    }
+  }, async ({ params: { userId: userIdStr } }) => {
+    const userId = parseNumber(userIdStr)
+
+    return handlers.profile.getProfileOfUser(userId)
+  })
+
+  server.post<{
+    Params: {
+      userId: string
+    }
+  }>('/users/:userId/subscribe', async ({ headers, params: { userId: userIdStr } }) => {
+    const { userId: myId } = await validateSession(headers, true)
+    const userId = parseNumber(userIdStr)
+
+    await handlers.users.subscribeToUser(myId!, userId)
+  })
+
+  server.post<{
+    Params: {
+      userId: string
+    }
+  }>('/users/:userId/unsubscribe', async ({ headers, params: { userId: userIdStr } }) => {
+    const { userId: myId } = await validateSession(headers, true)
+    const userId = parseNumber(userIdStr)
+
+    await handlers.users.unsubscribeFromUser(myId!, userId)
+  })
+
+  server.get<{
+    Params: {
+      userId: string
+    }
+  }>('/users/:userId/chat', {
+    schema: {
+      response: {
+        200: {
+          type: 'object',
+          properties: {
+            id: { type: 'number' },
+            initiator: {
+              type: 'object',
+              properties: {
+                id: { type: 'number' },
+                username: { type: 'string' },
+                avatarSrc: { type: 'string' },
+                coverSrc: { type: 'string' },
+                subscribed: { type: 'boolean' },
+              }
+            },
+            recepient: {
+              type: 'object',
+              properties: {
+                id: { type: 'number' },
+                username: { type: 'string' },
+                avatarSrc: { type: 'string' },
+                coverSrc: { type: 'string' },
+                subscribed: { type: 'boolean' },
+              }
+            },
+            unreadCount: { type: 'number' },
+            createdAt: { type: 'number' },
+            updatedAt: { type: 'number' }
+          }
+        }
+      }
+    }
+  }, async ({ headers, params: { userId: userIdStr } }) => {
+    const { userId: myId } = await validateSession(headers, true)
+    const userId = parseNumber(userIdStr)
+
+    return handlers.chats.getChatForUser(myId!, userId)
+  })
+
   server.get('/users/me', {
     schema: {
       response: {
@@ -160,78 +313,57 @@ export const createService = async ({ logger }: { logger: Logger }) => {
     return handlers.users.getUserById(userId, userId)
   })
 
-  server.post<{
-    Body: {
-      id: number
-    }
-  }>('/users/me/avatar', {
+  server.get('/users/me/subscriptions', {
     schema: {
-      body: {
-        type: 'object',
-        additionalProperties: false,
-        required: ['id'],
-        properties: {
-          id: { type: 'number', minimum: 1 }
+      response: {
+        200: {
+          type: 'object',
+          properties: {
+            user: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  id: { type: 'number' },
+                  title: { type: 'string' },
+                  slug: { type: 'string' }
+                }
+              }
+            },
+            stream: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  id: { type: 'number' },
+                  title: { type: 'string' },
+                  slug: { type: 'string' }
+                }
+              }
+            },
+            tag: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  id: { type: 'number' },
+                  title: { type: 'string' },
+                  slug: { type: 'string' }
+                }
+              }
+            },
+          }
         }
       }
     }
-  }, async ({ headers, body: { id: uploadId } }) => {
-    const { userId } = await validateSession(headers, true)
+  }, async ({ headers }) => {
+    const { userId } = await validateSession(headers)
 
-    await handlers.users.setAvatar(userId!, uploadId)
-  })
+    if (userId) {
+      return handlers.my.getMySubscriptions(userId)
+    }
 
-  server.post<{
-    Params: {
-      userId: string
-    }
-    Body: {
-      bio: string
-      firstName: string
-      lastName: string
-      dateOfBirth: number
-      country: string
-      city: string
-    }
-  }>('/users/me/profile', {
-    schema: {
-      body: {
-        type: 'object',
-        properties: {
-          bio: { type: 'string' },
-          firstName: { type: 'string' },
-          lastName: { type: 'string' },
-          dateOfBirth: { type: 'number' },
-          country: { type: 'string' },
-          city: { type: 'string' },
-        }
-      }
-    }
-  }, async ({ headers, body }) => {
-    const { userId } = await validateSession(headers, true)
-
-    return handlers.profile.updateProfile(userId!, body)
-  })
-
-  server.post<{
-    Body: {
-      id: number
-    }
-  }>('/users/me/cover', {
-    schema: {
-      body: {
-        type: 'object',
-        additionalProperties: false,
-        required: ['id'],
-        properties: {
-          id: { type: 'number', minimum: 1 }
-        }
-      }
-    }
-  }, async ({ headers, body: { id: uploadId } }) => {
-    const { userId } = await validateSession(headers, true)
-
-    await handlers.users.setCover(userId!, uploadId)
+    return {}
   })
 
   server.get('/users/me/chats', {
@@ -279,6 +411,108 @@ export const createService = async ({ logger }: { logger: Logger }) => {
     } catch (e) {
       return []
     }
+  })
+
+  server.post<{
+    Params: {
+      userId: string
+    }
+    Body: {
+      bio: string
+      firstName: string
+      lastName: string
+      dateOfBirth: number
+      country: string
+      city: string
+    }
+  }>('/users/me/profile', {
+    schema: {
+      body: {
+        type: 'object',
+        properties: {
+          bio: { type: 'string' },
+          firstName: { type: 'string' },
+          lastName: { type: 'string' },
+          dateOfBirth: { type: 'number' },
+          country: { type: 'string' },
+          city: { type: 'string' },
+        }
+      }
+    }
+  }, async ({ headers, body }) => {
+    const { userId } = await validateSession(headers, true)
+
+    return handlers.profile.updateProfile(userId!, body)
+  })
+
+  server.post<{
+    Body: {
+      id: number
+    }
+  }>('/users/me/avatar', {
+    schema: {
+      body: {
+        type: 'object',
+        additionalProperties: false,
+        required: ['id'],
+        properties: {
+          id: { type: 'number', minimum: 1 }
+        }
+      }
+    }
+  }, async ({ headers, body: { id: uploadId } }) => {
+    const { userId } = await validateSession(headers, true)
+
+    await handlers.users.setAvatar(userId!, uploadId)
+  })
+
+  server.post<{
+    Body: {
+      id: number
+    }
+  }>('/users/me/cover', {
+    schema: {
+      body: {
+        type: 'object',
+        additionalProperties: false,
+        required: ['id'],
+        properties: {
+          id: { type: 'number', minimum: 1 }
+        }
+      }
+    }
+  }, async ({ headers, body: { id: uploadId } }) => {
+    const { userId } = await validateSession(headers, true)
+
+    await handlers.users.setCover(userId!, uploadId)
+  })
+
+  server.post<{
+    Body: {
+      title: string
+      content: object
+      tags: string[]
+    }
+  }>('/posts', {
+    schema: {
+      body: {
+        type: 'object',
+        additionalProperties: false,
+        required: ['title', 'content', 'tags'],
+        properties: {
+          title: { type: 'string', minLength: 1, maxLength: 255 },
+          content: {},
+          tags: {
+            type: 'array',
+            items: { type: 'string', minLength: 1, maxLength: 255 }
+          }
+        }
+      }
+    }
+  }, async ({ headers, body }) => {
+    const { userId } = await validateSession(headers, true)
+
+    await handlers.posts.createPost(userId!, body)
   })
 
   server.get<{
@@ -388,34 +622,6 @@ export const createService = async ({ logger }: { logger: Logger }) => {
     })
   })
 
-  server.post<{
-    Body: {
-      title: string
-      content: object
-      tags: string[]
-    }
-  }>('/posts', {
-    schema: {
-      body: {
-        type: 'object',
-        additionalProperties: false,
-        required: ['title', 'content', 'tags'],
-        properties: {
-          title: { type: 'string', minLength: 1, maxLength: 255 },
-          content: {},
-          tags: {
-            type: 'array',
-            items: { type: 'string', minLength: 1, maxLength: 255 }
-          }
-        }
-      }
-    }
-  }, async ({ headers, body }) => {
-    const { userId } = await validateSession(headers, true)
-
-    await handlers.posts.createPost(userId!, body)
-  })
-
   server.get<{
     Querystring: {
       slug?: string
@@ -429,6 +635,14 @@ export const createService = async ({ logger }: { logger: Logger }) => {
         properties: {
           slug: { type: 'string', minLength: 1, maxLength: 255 },
           fuzzyTitle: { type: 'string', minLength: 1, maxLength: 255 },
+        }
+      },
+      response: {
+        200: {
+          id: { type: 'number'},
+          title: { type: 'string'},
+          slug: { type: 'string'},
+          subscribed: { type: 'boolean'},
         }
       }
     }
@@ -564,202 +778,6 @@ export const createService = async ({ logger }: { logger: Logger }) => {
     const offset = parseNumber(offsetStr)
 
     return handlers.streams.getPostsOfStream(userId, streamId, { limit, offset })
-  })
-
-  server.get('/users/me/subscriptions', {
-    schema: {
-      response: {
-        200: {
-          type: 'object',
-          properties: {
-            user: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  id: { type: 'number' },
-                  title: { type: 'string' },
-                  slug: { type: 'string' }
-                }
-              }
-            },
-            stream: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  id: { type: 'number' },
-                  title: { type: 'string' },
-                  slug: { type: 'string' }
-                }
-              }
-            },
-            tag: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  id: { type: 'number' },
-                  title: { type: 'string' },
-                  slug: { type: 'string' }
-                }
-              }
-            },
-          }
-        }
-      }
-    }
-  }, async ({ headers }) => {
-    const { userId } = await validateSession(headers)
-
-    if (userId) {
-      return handlers.my.getMySubscriptions(userId)
-    }
-
-    return {}
-  })
-
-  server.get<{
-    Querystring: {
-      username: string
-    }
-  }>('/users', {
-    schema: {
-      querystring: {
-        type: 'object',
-        additionalProperties: false,
-        required: ['username'],
-        properties: {
-          username: { type: 'string', minLength: 1, maxLength: 255 },
-          avatarSrc: { type: 'string' },
-          coverSrc: { type: 'string' }
-        }
-      }
-    }
-  }, async ({ headers, query: { username } }) => {
-    const { userId } = await validateSession(headers)
-
-    return handlers.users.getUserByUsername(userId, username)
-  })
-
-  server.get<{
-    Params: {
-      userId: string
-    }
-  }>('/users/:userId', {
-    schema: {
-      response: {
-        200: {
-          type: 'object',
-          properties: {
-            id: { type: 'number' },
-            username: { type: 'string' },
-            avatarSrc: { type: 'string' },
-            coverSrc: { type: 'string' },
-            subscribed: { type: 'boolean' },
-          }
-        }
-      }
-    }
-  }, async ({ headers, params: { userId: userIdStr } }) => {
-    const { userId: myId } = await validateSession(headers)
-    const userId = parseNumber(userIdStr)
-
-    return handlers.users.getUserById(myId, userId)
-  })
-
-  server.get<{
-    Params: {
-      userId: string
-    }
-  }>('/users/:userId/profile', {
-    schema: {
-      response: {
-        200: {
-          type: 'object',
-          properties: {
-            id: { type: 'number' },
-            bio: { type: 'string' },
-            firstName: { type: 'string' },
-            lastName: { type: 'string' },
-            dateOfBirth: { type: 'number' },
-            country: { type: 'string' },
-            city: { type: 'string' },
-          }
-        }
-      }
-    }
-  }, async ({ params: { userId: userIdStr } }) => {
-    const userId = parseNumber(userIdStr)
-
-    return handlers.profile.getProfileOfUser(userId)
-  })
-
-  server.post<{
-    Params: {
-      userId: string
-    }
-  }>('/users/:userId/subscribe', async ({ headers, params: { userId: userIdStr } }) => {
-    const { userId: myId } = await validateSession(headers, true)
-    const userId = parseNumber(userIdStr)
-
-    await handlers.users.subscribeToUser(myId!, userId)
-  })
-
-  server.post<{
-    Params: {
-      userId: string
-    }
-  }>('/users/:userId/unsubscribe', async ({ headers, params: { userId: userIdStr } }) => {
-    const { userId: myId } = await validateSession(headers, true)
-    const userId = parseNumber(userIdStr)
-
-    await handlers.users.unsubscribeFromUser(myId!, userId)
-  })
-
-  server.get<{
-    Params: {
-      userId: string
-    }
-  }>('/users/:userId/chat', {
-    schema: {
-      response: {
-        200: {
-          type: 'object',
-          properties: {
-            id: { type: 'number' },
-            initiator: {
-              type: 'object',
-              properties: {
-                id: { type: 'number' },
-                username: { type: 'string' },
-                avatarSrc: { type: 'string' },
-                coverSrc: { type: 'string' },
-                subscribed: { type: 'boolean' },
-              }
-            },
-            recepient: {
-              type: 'object',
-              properties: {
-                id: { type: 'number' },
-                username: { type: 'string' },
-                avatarSrc: { type: 'string' },
-                coverSrc: { type: 'string' },
-                subscribed: { type: 'boolean' },
-              }
-            },
-            unreadCount: { type: 'number' },
-            createdAt: { type: 'number' },
-            updatedAt: { type: 'number' }
-          }
-        }
-      }
-    }
-  }, async ({ headers, params: { userId: userIdStr } }) => {
-    const { userId: myId } = await validateSession(headers, true)
-    const userId = parseNumber(userIdStr)
-
-    return handlers.chats.getChatForUser(myId!, userId)
   })
 
   server.get<{
