@@ -6,7 +6,7 @@ export class UserProfile implements UserProfileType {
   bio: string
   firstName: string
   lastName: string
-  dateOfBirth: string
+  dateOfBirth: number
   country: string
   city: string
 

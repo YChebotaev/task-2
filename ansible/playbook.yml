@@ -1,6 +1,6 @@
 ---
-- name: pincodes
-  hosts: pincodes
+- name: task-2
+  hosts: task-2
   remote_user: root
   tasks:
     # UFW
