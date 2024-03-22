@@ -100,17 +100,6 @@ export const SigninForm: FC = () => {
             >
               Зарегистрироваться
             </Button>
-            <Button
-              type="link"
-              href="/auth/restore"
-              onClick={(e) => {
-                e.preventDefault();
-
-                navigate("/auth/restore");
-              }}
-            >
-              Восстановить пароль
-            </Button>
           </Space>
         </Form.Item>
       </Form>
